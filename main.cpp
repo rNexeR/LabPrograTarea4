@@ -1,6 +1,7 @@
 
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include<iostream>
 #include<vector>
 #include<list>
@@ -8,6 +9,9 @@
 #include "EnemigoAzul.h"
 #include "EnemigoVerde.h"
 #include "EnemigoRojo.h"
+#include <iostream>
+#include <fstream>
+
 
 using namespace std;
 
@@ -16,7 +20,74 @@ SDL_Renderer* renderer;
 SDL_Event Event;
 SDL_Texture *background;
 SDL_Rect rect_background;
+TTF_Font* Sans;
+SDL_Color White;
 
+void initTTF(){
+    if(TTF_Init()==-1) {
+    printf("TTF_Init: %s\n", TTF_GetError());
+    exit(2);
+}
+//
+//TTF_Font *myFont;
+//myFont=TTF_OpenFont("font.ttf", 16);
+//if(!myFont) {
+//    printf("TTF_OpenFont: %s\n", TTF_GetError());
+//    // handle error
+//}
+
+Sans = TTF_OpenFont("font.ttf", 24); //this opens a font style and sets a size
+if(!Sans) {
+    printf("TTF_OpenFont: %s\n", TTF_GetError());
+    // handle error
+}
+White = {0, 0, 0};  // this is the color in rgb format, maxing out all would give you the color white, and it will be your text's color
+cout<<"Finalice"<<endl;
+}
+
+void showTTF(int frame){
+//    int minx = 0;
+//int maxx = 0;
+//int miny = 0;
+//int maxy = 0;
+//int advance = 0;
+string esto = ""+frame;
+cout<<esto<<endl;
+SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, (char*)&frame, White); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+
+SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage); //now you can convert it into a texture
+
+SDL_Rect Message_rect; //create a rect
+Message_rect.x = 0;  //controls the rect's x coordinate
+Message_rect.y = 0; // controls the rect's y coordinte
+Message_rect.w = 100; // controls the width of the rect
+Message_rect.h = 100; // controls the height of the rect
+
+//Mind you that (0,0) is on the top left of the window/screen, think a rect as the text's box, that way it would be very simple to understance
+
+//Now since it's a texture, you have to put RenderCopy in your game loop area, the area where the whole code executes
+
+SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+
+}
+
+int readFrame(){
+    cout<<"Leyendo"<<endl;
+    ifstream in("points");
+    in.seekg(0);
+    int puntaje;
+    in.read((char*)&puntaje,4);
+    in.close();
+    return puntaje;
+}
+
+void writeFrame(int frame){
+    cout<<"Escribiendo nueva cantidad de frames: ";
+    ofstream out("points");
+    out.write((char*)&frame,4);
+    cout<<frame<<endl;
+    out.close();
+}
 
 void loopInstruc(){
     while(true)
@@ -69,6 +140,7 @@ void loopJuego()
     //Main Loop
     int frame=0;
     int animacion_sho = 0;
+    bool over = false;
     const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
     while(true)
     {
@@ -103,6 +175,7 @@ void loopJuego()
         SDL_RenderClear(renderer);
 
         SDL_RenderCopy(renderer, background, NULL, &rect_background);
+        //showTTF(frame);
 
         for(list<Personaje*>::iterator p=personajes.begin();
                 p!=personajes.end();
@@ -114,6 +187,8 @@ void loopJuego()
                 p++)
             if((*p)->muerto)
             {
+                if ((*p)->clase=="Sho")
+                    over = true;
                 personajes.erase(p);
                 break;
             }
@@ -121,6 +196,11 @@ void loopJuego()
         SDL_RenderPresent(renderer);
 
         frame++;
+        if (over){
+            if (readFrame()<frame)
+                writeFrame(frame);
+            break;
+        }
     }
 }
 
@@ -169,6 +249,7 @@ void mainMenu()
     buttons.push_back(new MenuButton("button1_selected.png","button1_unselected.png",300,300));
     buttons.push_back(new MenuButton("button2_selected.png","button2_unselected.png",300,400));
     buttons.push_back(new MenuButton("button3_selected.png","button3_unselected.png",300,500));
+    buttons.push_back(new MenuButton("reset_selected.png","reset_unselected.png",300,600));
     SDL_QueryTexture(menu_fondo, NULL, NULL, &menu_rect.w, &menu_rect.h);
     menu_rect.x = 0;
     menu_rect.y = 0;
@@ -198,8 +279,8 @@ void mainMenu()
                 if(Event.key.keysym.sym == SDLK_DOWN)
                 {
                     opcion++;
-                    if(opcion > 3)
-                        opcion = 3;
+                    if(opcion > 4)
+                        opcion = 4;
                 }
                 if(Event.key.keysym.sym == SDLK_UP)
                 {
@@ -220,12 +301,16 @@ void mainMenu()
                         case 3:
                             exit(0);
                         break;
+                        case 4:
+                            writeFrame(0);
+                        break;
                     }
                 }
             }
         }
 
         SDL_RenderCopy(renderer,menu_fondo,NULL,&menu_rect);
+
 
 
         for(int i=0;i<buttons.size();i++)
@@ -261,7 +346,7 @@ int main( int argc, char* args[] )
         std::cout << SDL_GetError() << std::endl;
         return 30;
     }
-
+    initTTF();
     mainMenu();
 
 	return 0;

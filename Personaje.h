@@ -22,6 +22,7 @@ class Personaje
         int textura_actual_int;
         bool atacando;
         bool muerto;
+        string clase;
 
         virtual void draw(SDL_Renderer* renderer);
         virtual void act()=0;

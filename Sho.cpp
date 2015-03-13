@@ -46,6 +46,7 @@ Sho::Sho(SDL_Renderer* renderer,list<Personaje*> *personajes)
     rect.y = 0;
 
     init(renderer,personajes);
+    clase = "Sho";
 }
 
 void Sho::act()
